@@ -1,0 +1,6 @@
+@GuildQuestsAPI_HostAddress = http://localhost:5153
+
+GET {{GuildQuestsAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
