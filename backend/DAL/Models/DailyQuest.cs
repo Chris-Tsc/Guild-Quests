@@ -1,16 +1,16 @@
-﻿using static GuildQuestsAPI.Models.Events;
+﻿using static DAL.Models.Events;
 
-namespace GuildQuestsAPI.Models
+namespace DAL.Models
 {
     public class DailyQuest
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
 
         // Reference Events
         public int EventsId { get; set; }
-        public Events Events { get; set; }
+        public Events? Events { get; set; }
 
         public int RequiredLevel { get; set; } // Hidden until player reaches this level
     }

@@ -1,19 +1,14 @@
-﻿using static GuildQuestsAPI.Models.Events;
+﻿using DAL.Models.Enums;
 
-namespace GuildQuestsAPI.Models
+namespace DAL.Models
 {
-    public enum GuildQuestType
-    {
-        Normal = 1,
-        Elite = 2
-    }
 
     public class GuildQuest
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public GuildQuestType Type { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public IEnumerable<GuildQuestEnum> GuildQuestType { get; set; } = Enumerable.Empty<GuildQuestEnum>();
 
         // Reference Events
         public int EventsId { get; set; }

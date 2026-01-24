@@ -1,4 +1,4 @@
-﻿namespace GuildQuestsAPI.Models
+﻿namespace DAL.Models
 {
     public class Player
     {
