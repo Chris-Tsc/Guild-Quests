@@ -1,6 +1,4 @@
-﻿using static DAL.Models.Events;
-
-namespace DAL.Models
+﻿namespace DAL.Models
 {
     public class DailyQuest
     {

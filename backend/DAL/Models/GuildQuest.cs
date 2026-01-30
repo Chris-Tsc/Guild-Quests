@@ -8,11 +8,12 @@ namespace DAL.Models
         public int Id { get; set; }
         public string? Name { get; set; }
         public string? Description { get; set; }
-        public IEnumerable<GuildQuestEnum> GuildQuestType { get; set; } = Enumerable.Empty<GuildQuestEnum>();
+        public GuildQuestEnum? GuildQuestType { get; set; }
+        //public IEnumerable<GuildQuestEnum> GuildQuestType { get; set; } = Enumerable.Empty<GuildQuestEnum>();
 
         // Reference Events
         public int EventsId { get; set; }
-        public Events Events { get; set; }
+        public Events? Events { get; set; }
 
         public int RequiredLevel { get; set; } = 1;  // Hidden until player reaches this level
         public int EnergyCost { get; set; } = 1;     // Energy needed to accept
