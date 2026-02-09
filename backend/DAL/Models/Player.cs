@@ -3,10 +3,11 @@
     public class Player
     {
         public int Id { get; set; }
-        public string? Name { get; set; }
+        public string? InGameName { get; set; }
         public int Level { get; set; }
         public int CurrentXP { get; set; }
         public int Energy { get; set; }
+        public DateTime LastEnergyResetDate { get; set; }
 
         // Stats
         public int Strength { get; set; }
@@ -14,5 +15,7 @@
         public int Agility { get; set; }
         public int Perception { get; set; }
         public int Luck { get; set; }
+
+        public string? AppUserId { get; set; } 
     }
 }
