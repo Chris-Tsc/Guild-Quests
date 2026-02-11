@@ -2,7 +2,7 @@
 using DAL.Models;
 
 
-namespace GuildQuestsAPI.Identity
+namespace DAL.Identity
 {
     public class AppUser : IdentityUser
     {

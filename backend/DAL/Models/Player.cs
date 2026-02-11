@@ -1,4 +1,6 @@
-﻿namespace DAL.Models
+﻿using DAL.Identity;
+
+namespace DAL.Models
 {
     public class Player
     {
@@ -17,5 +19,6 @@
         public int Luck { get; set; }
 
         public string? AppUserId { get; set; } 
+        public AppUser? AppUser { get; set; }
     }
 }
