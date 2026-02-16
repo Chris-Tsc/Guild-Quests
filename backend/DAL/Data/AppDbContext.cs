@@ -1,19 +1,18 @@
 ﻿
 using DAL.Identity;
 using DAL.Models;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DAL.Data
 {
-    public class AppDbContext
-        : IdentityDbContext<AppUser>
+    public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
         }
 
+        public DbSet<AppUser> AppUsers => Set<AppUser>();
         public DbSet<Player> Players => Set<Player>();
         public DbSet<DailyQuest> DailyQuests => Set<DailyQuest>();
         public DbSet<GuildQuest> GuildQuests => Set<GuildQuest>();
@@ -29,6 +28,11 @@ namespace DAL.Data
             // Unique in-game name
             modelBuilder.Entity<Player>()
                 .HasIndex(p => p.InGameName)
+                .IsUnique();
+
+            // Unique username
+            modelBuilder.Entity<AppUser>()
+                .HasIndex(u => u.Username)
                 .IsUnique();
 
             // Player - Identity User relationship
