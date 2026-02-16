@@ -20,15 +20,35 @@ namespace GuildQuestsAPI.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterRequest request)
         {
-            var token = await _auth.RegisterAsync(request.Username, request.Password);
-            return Ok(new { token });
+            try
+            {
+                var token = await _auth.RegisterAsync(request.Username, request.Password);
+                return Ok(new { token });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+                    return Conflict(new { error = ex.Message });
+
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            var token = await _auth.LoginAsync(request.Username, request.Password);
-            return Ok(new { token });
+            try
+            {
+                var token = await _auth.LoginAsync(request.Username, request.Password);
+                return Ok(new { token });
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("Invalid credentials", StringComparison.OrdinalIgnoreCase))
+                    return Unauthorized(new { error = ex.Message });
+
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }

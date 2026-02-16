@@ -18,6 +18,15 @@ namespace BLL.Services
 
         public async Task<string> RegisterAsync(string username, string password)
         {
+            username = (username ?? string.Empty).Trim();
+            password = password ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(username))
+                throw new Exception("Username is required.");
+
+            if (string.IsNullOrWhiteSpace(password))
+                throw new Exception("Password is required.");
+
             bool exists = await _dbc.AppUsers.AnyAsync(u => u.Username == username);
             if (exists) throw new Exception("Username already exists.");
 
@@ -38,10 +47,22 @@ namespace BLL.Services
 
         public async Task<string> LoginAsync(string username, string password)
         {
+            username = (username ?? string.Empty).Trim();
+            password = password ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                throw new Exception("Invalid credentials.");
+
             var user = await _dbc.AppUsers.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null) throw new Exception("Invalid credentials.");
 
-            bool ok = PasswordHasher.VerifyPassword(password, user.PasswordHash, user.PasswordSalt);
+            var storedHash = user.PasswordHash ?? string.Empty;
+            var storedSalt = user.PasswordSalt ?? string.Empty;
+
+            if (string.IsNullOrEmpty(storedHash) || string.IsNullOrEmpty(storedSalt))
+                throw new Exception("Invalid credentials.");
+
+            bool ok = PasswordHasher.VerifyPassword(password, storedHash, storedSalt);
             if (!ok) throw new Exception("Invalid credentials.");
 
             return _jwt.CreateToken(user);

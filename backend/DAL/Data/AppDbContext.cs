@@ -1,5 +1,4 @@
-﻿
-using DAL.Identity;
+﻿using DAL.Identity;
 using DAL.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,9 +36,9 @@ namespace DAL.Data
 
             // Player - Identity User relationship
             modelBuilder.Entity<Player>()
-                .HasOne<AppUser>()
-                .WithMany()
-                .HasForeignKey(p => p.AppUserId)
+                .HasOne(p => p.AppUser)
+                .WithOne(u => u.Player)
+                .HasForeignKey<Player>(p => p.AppUserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // PlayerGuildQuest relationships

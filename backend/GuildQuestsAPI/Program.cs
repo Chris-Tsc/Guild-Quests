@@ -1,3 +1,4 @@
+using BLL.Services;
 using DAL.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddSingleton(new JwtTokenService(jwtSecret));
+builder.Services.AddScoped<AuthenticationService>();
 
 // Add services to the container.
 
