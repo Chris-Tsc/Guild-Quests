@@ -1,11 +1,8 @@
 ﻿namespace DAL.Models.Enums
 {
-    public class QuestTypeEnum
+    public enum QuestTypeEnum
     {
-        public enum QuestType
-        {
-            Daily = 1,
-            Guild = 2
-        }
+        Daily = 1,
+        Guild = 2
     }
 }

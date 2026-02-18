@@ -9,7 +9,6 @@ namespace DAL.Models
         public string? Name { get; set; }
         public string? Description { get; set; }
         public GuildQuestEnum? GuildQuestType { get; set; }
-        //public IEnumerable<GuildQuestEnum> GuildQuestType { get; set; } = Enumerable.Empty<GuildQuestEnum>();
 
         // Reference Events
         public int EventsId { get; set; }

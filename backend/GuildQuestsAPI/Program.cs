@@ -14,6 +14,8 @@ if (string.IsNullOrEmpty(connectionString))
     throw new Exception("Database connection string not found in environment variables.");
 }
 
+Console.WriteLine("DB_CONNECTION_G = " + connectionString);
+
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
