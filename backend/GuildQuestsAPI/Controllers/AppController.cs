@@ -1,5 +1,7 @@
 ﻿using BLL.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace GuildQuestsAPI.Controllers
 {
@@ -49,6 +51,16 @@ namespace GuildQuestsAPI.Controllers
 
                 return BadRequest(new { error = ex.Message });
             }
+        }
+
+        [Authorize]
+        [HttpGet("authotest")]
+        public IActionResult AuthoTest()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var username = User.Identity?.Name;
+
+            return Ok(new { userId, username });
         }
     }
 }
