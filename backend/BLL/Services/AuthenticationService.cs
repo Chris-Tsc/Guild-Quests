@@ -1,11 +1,12 @@
-﻿using DAL.Data;
+﻿using BLL.Services.Interfaces;
+using DAL.Data;
 using DAL.Identity;
 using Microsoft.EntityFrameworkCore;
 
 
 namespace BLL.Services
 {
-    public class AuthenticationService
+    public class AuthenticationService : IAuthenticationService
     {
         private readonly AppDbContext _dbc;
         private readonly JwtTokenService _jwt;

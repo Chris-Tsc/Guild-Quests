@@ -1,10 +1,11 @@
-﻿using DAL.Data;
+﻿using BLL.Services.Interfaces;
+using DAL.Data;
 using DAL.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BLL.Services
 {
-    public class PlayerService
+    public class PlayerService : IPlayerService
     {
         private readonly AppDbContext _dbc;
 

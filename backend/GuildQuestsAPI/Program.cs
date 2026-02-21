@@ -1,4 +1,5 @@
 using BLL.Services;
+using BLL.Services.Interfaces;
 using DAL.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -45,8 +46,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton(new JwtTokenService(jwtSecret));
-builder.Services.AddScoped<AuthenticationService>();
-builder.Services.AddScoped<PlayerService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<IPlayerService, PlayerService>();
 
 // Add services to the container.
 

@@ -1,4 +1,4 @@
-﻿using BLL.Services;
+﻿using BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -9,9 +9,9 @@ namespace GuildQuestsAPI.Controllers
     [Route("api/[controller]")]
     public class AppController : ControllerBase
     {
-        private readonly AuthenticationService _auth;
+        private readonly IAuthenticationService _auth;
 
-        public AppController(AuthenticationService auth)
+        public AppController(IAuthenticationService auth)
         {
             _auth = auth;
         }

@@ -1,4 +1,4 @@
-﻿using BLL.Services;
+﻿using BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -9,9 +9,9 @@ namespace GuildQuestsAPI.Controllers
     [Route("api/[controller]")]
     public class PlayerController : ControllerBase
     {
-        private readonly PlayerService _players;
+        private readonly IPlayerService _players;
 
-        public PlayerController(PlayerService players)
+        public PlayerController(IPlayerService players)
         {
             _players = players;
         }
