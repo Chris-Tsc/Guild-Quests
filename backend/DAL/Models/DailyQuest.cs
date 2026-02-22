@@ -5,6 +5,7 @@
         public int Id { get; set; }
         public string? Name { get; set; }
         public string? Description { get; set; }
+        public int BaseXP { get; set; }
 
         // Reference Events
         public int EventsId { get; set; }

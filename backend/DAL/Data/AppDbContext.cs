@@ -19,6 +19,7 @@ namespace DAL.Data
         public DbSet<SkillNode> SkillNodes => Set<SkillNode>();
         public DbSet<QuestOption> QuestOptions => Set<QuestOption>();
         public DbSet<PlayerGuildQuest> PlayerGuildQuests => Set<PlayerGuildQuest>();
+        public DbSet<PlayerDailyQuest> PlayerDailyQuests => Set<PlayerDailyQuest>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +52,17 @@ namespace DAL.Data
                 .HasOne(pgq => pgq.GuildQuest)
                 .WithMany()
                 .HasForeignKey(pgq => pgq.GuildQuestId);
+
+            // PlayerDailyQuest relationships
+            modelBuilder.Entity<PlayerDailyQuest>()
+                .HasOne(pdq => pdq.Player)
+                .WithMany()
+                .HasForeignKey(pdq => pdq.PlayerId);
+
+            modelBuilder.Entity<PlayerDailyQuest>()
+                .HasOne(pdq => pdq.DailyQuest)
+                .WithMany()
+                .HasForeignKey(pdq => pdq.DailyQuestId);
         }
     }
 }
