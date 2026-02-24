@@ -26,17 +26,20 @@ namespace GuildQuestsAPI.Controllers
                 if (string.IsNullOrWhiteSpace(appUserId))
                     return Unauthorized(new { error = "Missing user id in token." });
 
-                var quests = await _daily.GetOrCreateTodayDailyQuestsAsync(appUserId);
+                var assigned = await _daily.GetOrCreateTodayDailyQuestAssignmentsAsync(appUserId);
 
-                return Ok(quests.Select(q => new
-                {
-                    q.Id,
-                    q.Name,
-                    q.Description,
-                    q.BaseXP,
-                    q.RequiredLevel,
-                    q.EventsId
-                }));
+                return Ok(assigned
+                    .Where(q => q.DailyQuest != null)
+                    .Select(q => new
+                    {
+                        q.DailyQuest!.Id,
+                        q.DailyQuest!.Name,
+                        q.DailyQuest!.Description,
+                        q.DailyQuest!.BaseXP,
+                        q.DailyQuest!.RequiredLevel,
+                        q.DailyQuest!.EventsId,
+                        q.IsCompleted
+                    }));
             }
             catch (Exception ex)
             {

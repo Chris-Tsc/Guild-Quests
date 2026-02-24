@@ -16,7 +16,7 @@ namespace BLL.Services
             _playerService = playerService;
         }
 
-        public async Task<List<DailyQuest>> GetOrCreateTodayDailyQuestsAsync(string appUserId)
+        public async Task<List<PlayerDailyQuest>> GetOrCreateTodayDailyQuestAssignmentsAsync(string appUserId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
             if (player == null)
@@ -24,7 +24,6 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
-            // assign check
             var assigned = await _dbc.PlayerDailyQuests
                 .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
                 .Include(x => x.DailyQuest)
@@ -32,10 +31,7 @@ namespace BLL.Services
 
             if (assigned.Count >= 2)
             {
-                return assigned
-                    .Where(x => x.DailyQuest != null)
-                    .Select(x => x.DailyQuest!)
-                    .ToList();
+                return assigned;
             }
 
             var eligible = await _dbc.DailyQuests
@@ -45,7 +41,7 @@ namespace BLL.Services
             if (eligible.Count < 2)
                 throw new Exception("Not enough daily quests available for your level.");
 
-            // randomly roll 2 daily quests
+            // randomly roll 2 distinct daily quests
             var rng = Random.Shared;
             var first = eligible[rng.Next(eligible.Count)];
             DailyQuest second;
@@ -80,7 +76,20 @@ namespace BLL.Services
             _dbc.PlayerDailyQuests.AddRange(rows);
             await _dbc.SaveChangesAsync();
 
-            return new List<DailyQuest> { first, second };
+            return await _dbc.PlayerDailyQuests
+                .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
+                .Include(x => x.DailyQuest)
+                .ToListAsync();
+        }
+
+        public async Task<List<DailyQuest>> GetOrCreateTodayDailyQuestsAsync(string appUserId)
+        {
+            var assigned = await GetOrCreateTodayDailyQuestAssignmentsAsync(appUserId);
+
+            return assigned
+                .Where(x => x.DailyQuest != null)
+                .Select(x => x.DailyQuest!)
+                .ToList();
         }
 
         public async Task CompleteDailyQuestAsync(string appUserId, int dailyQuestId)
