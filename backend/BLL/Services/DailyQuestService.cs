@@ -92,7 +92,7 @@ namespace BLL.Services
                 .ToList();
         }
 
-        public async Task CompleteDailyQuestAsync(string appUserId, int dailyQuestId)
+        public async Task CompleteDailyQuestAsync(string appUserId, int dailyQuestId, int dailyQuestOptionId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
             if (player == null)
@@ -116,8 +116,33 @@ namespace BLL.Services
             if (completeCheck.DailyQuest == null)
                 throw new Exception("Daily quest data missing.");
 
-            // completing gives xp 
-            player.CurrentXP += completeCheck.DailyQuest.BaseXP;
+            // make sure option belongs to this DailyQuest
+            var option = await _dbc.DailyQuestOptions
+                .FirstOrDefaultAsync(o => o.Id == dailyQuestOptionId && o.DailyQuestId == dailyQuestId);
+
+            if (option == null)
+                throw new Exception("Invalid option for this daily quest.");
+
+            // sample simple formula for now
+            int chance =
+                option.BaseSuccessChance +
+                (player.Strength * option.StrengthWeight) +
+                (player.Intelligence * option.IntelligenceWeight) +
+                (player.Agility * option.AgilityWeight) +
+                (player.Perception * option.PerceptionWeight) +
+                player.Luck;
+
+            // made chance so nothing is guaranteed for now
+            chance = Math.Clamp(chance, 5, 95);
+
+            int roll = Random.Shared.Next(0, 100);
+            bool success = roll < chance;
+
+            int fullXp = completeCheck.DailyQuest.BaseXP;
+            int gainedXp = success ? fullXp : (int)Math.Floor(fullXp * 0.25);
+
+            player.CurrentXP += gainedXp;
+
 
             completeCheck.IsCompleted = true;
 

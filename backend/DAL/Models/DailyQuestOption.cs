@@ -1,8 +1,6 @@
-﻿using DAL.Models.Enums;
-
-namespace DAL.Models
+﻿namespace DAL.Models
 {
-    public class QuestOption
+    public class DailyQuestOption
     {
         public int Id { get; set; }
 
@@ -18,9 +16,8 @@ namespace DAL.Models
 
         // Relationships 
 
-        public int QuestId { get; set; }
+        public int DailyQuestId { get; set; }
 
-        public QuestTypeEnum? QuestType { get; set; }
-        // Daily or Guild
+        public DailyQuest? DailyQuest { get; set; }        
     }
 }
