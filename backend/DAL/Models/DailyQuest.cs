@@ -12,5 +12,7 @@
         public Events? Events { get; set; }
 
         public int RequiredLevel { get; set; } // Hidden until player reaches this level
+
+        public List<DailyQuestOption> Options { get; set; } = new();
     }
 }

@@ -1,13 +1,13 @@
-﻿using DAL.Models;
+﻿using BLL.Contracts.DailyQuests;
 
 namespace BLL.Services.Interfaces
 {
     public interface IDailyQuestService
     {
-        Task<List<DailyQuest>> GetOrCreateTodayDailyQuestsAsync(string appUserId);
+        Task<List<DailyQuestTodayDto>> GetOrCreateTodayDailyQuestsAsync(string appUserId);
 
-        Task<List<PlayerDailyQuest>> GetOrCreateTodayDailyQuestAssignmentsAsync(string appUserId);
+        //Task<List<PlayerDailyQuest>> GetOrCreateTodayDailyQuestAssignmentsAsync(string appUserId);
 
-        Task CompleteDailyQuestAsync(string appUserId, int dailyQuestId, int dailyQuestOptionId);
+        Task<CompleteDailyQuestResultDto> CompleteDailyQuestAsync(string appUserId, int dailyQuestId, int dailyQuestOptionId);
     }
 }

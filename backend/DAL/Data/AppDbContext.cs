@@ -66,7 +66,7 @@ namespace DAL.Data
 
             modelBuilder.Entity<DailyQuestOption>()
                 .HasOne(o => o.DailyQuest)
-                .WithMany()
+                .WithMany(q => q.Options)
                 .HasForeignKey(o => o.DailyQuestId);
         }
     }

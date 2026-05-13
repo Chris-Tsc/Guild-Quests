@@ -1,4 +1,5 @@
-﻿using BLL.Services.Interfaces;
+﻿using BLL.Contracts.DailyQuests;
+using BLL.Services.Interfaces;
 using DAL.Data;
 using DAL.Models;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ namespace BLL.Services
             var assigned = await _dbc.PlayerDailyQuests
                 .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
                 .Include(x => x.DailyQuest)
+                .ThenInclude(q => q!.Options)
                 .ToListAsync();
 
             if (assigned.Count >= 2)
@@ -79,20 +81,32 @@ namespace BLL.Services
             return await _dbc.PlayerDailyQuests
                 .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
                 .Include(x => x.DailyQuest)
+                .ThenInclude(q => q!.Options)
                 .ToListAsync();
         }
 
-        public async Task<List<DailyQuest>> GetOrCreateTodayDailyQuestsAsync(string appUserId)
+        public async Task<List<DailyQuestTodayDto>> GetOrCreateTodayDailyQuestsAsync(string appUserId)
         {
             var assigned = await GetOrCreateTodayDailyQuestAssignmentsAsync(appUserId);
 
             return assigned
                 .Where(x => x.DailyQuest != null)
-                .Select(x => x.DailyQuest!)
+                .Select(x => new DailyQuestTodayDto(
+                    x.DailyQuest!.Id,
+                    x.DailyQuest.Name,
+                    x.DailyQuest.Description,
+                    x.DailyQuest.BaseXP,
+                    x.DailyQuest.RequiredLevel,
+                    x.DailyQuest.EventsId,
+                    x.IsCompleted,
+                    x.DailyQuest.Options
+                        .Select(o => new DailyQuestOptionDto(o.Id, o.Text))
+                        .ToList()
+                ))
                 .ToList();
         }
 
-        public async Task CompleteDailyQuestAsync(string appUserId, int dailyQuestId, int dailyQuestOptionId)
+        public async Task<CompleteDailyQuestResultDto> CompleteDailyQuestAsync(string appUserId, int dailyQuestId, int dailyQuestOptionId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
             if (player == null)
@@ -147,6 +161,7 @@ namespace BLL.Services
             completeCheck.IsCompleted = true;
 
             await _dbc.SaveChangesAsync();
+            return new CompleteDailyQuestResultDto(success, gainedXp, player.CurrentXP);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using BLL.Services.Interfaces;
+﻿using BLL.Contracts.DailyQuests;
+using BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -26,20 +27,9 @@ namespace GuildQuestsAPI.Controllers
                 if (string.IsNullOrWhiteSpace(appUserId))
                     return Unauthorized(new { error = "Missing user id in token." });
 
-                var assigned = await _daily.GetOrCreateTodayDailyQuestAssignmentsAsync(appUserId);
+                var quests = await _daily.GetOrCreateTodayDailyQuestsAsync(appUserId);
 
-                return Ok(assigned
-                    .Where(q => q.DailyQuest != null)
-                    .Select(q => new
-                    {
-                        q.DailyQuest!.Id,
-                        q.DailyQuest!.Name,
-                        q.DailyQuest!.Description,
-                        q.DailyQuest!.BaseXP,
-                        q.DailyQuest!.RequiredLevel,
-                        q.DailyQuest!.EventsId,
-                        q.IsCompleted
-                    }));
+                return Ok(quests);
             }
             catch (Exception ex)
             {
@@ -47,7 +37,6 @@ namespace GuildQuestsAPI.Controllers
             }
         }
 
-        public record CompleteDailyQuestRequest(int DailyQuestId);
 
         [Authorize]
         [HttpPost("complete")]
@@ -59,9 +48,12 @@ namespace GuildQuestsAPI.Controllers
                 if (string.IsNullOrWhiteSpace(appUserId))
                     return Unauthorized(new { error = "Missing user id in token." });
 
-                await _daily.CompleteDailyQuestAsync(appUserId, request.DailyQuestId);
+                var result = await _daily.CompleteDailyQuestAsync(
+                    appUserId,
+                    request.DailyQuestId,
+                    request.DailyQuestOptionId);
 
-                return Ok(new { message = "Daily quest completed." });
+                return Ok(result);
             }
             catch (Exception ex)
             {
