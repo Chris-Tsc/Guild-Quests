@@ -49,6 +49,7 @@ builder.Services.AddSingleton(new JwtTokenService(jwtSecret));
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IDailyQuestService, DailyQuestService>();
+builder.Services.AddScoped<IGuildQuestService, GuildQuestService>();
 
 // Add services to the container.
 

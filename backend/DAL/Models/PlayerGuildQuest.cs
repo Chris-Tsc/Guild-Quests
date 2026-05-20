@@ -7,6 +7,7 @@
         public int PlayerId { get; set; }
         public GuildQuest? GuildQuest { get; set; }
         public int GuildQuestId { get; set; }
+        public DateTime DaytimeInfoUtc { get; set; }
         public bool IsCompleted { get; set; }
     }
 }

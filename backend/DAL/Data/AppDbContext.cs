@@ -20,6 +20,7 @@ namespace DAL.Data
         public DbSet<DailyQuestOption> DailyQuestOptions => Set<DailyQuestOption>();
         public DbSet<PlayerGuildQuest> PlayerGuildQuests => Set<PlayerGuildQuest>();
         public DbSet<PlayerDailyQuest> PlayerDailyQuests => Set<PlayerDailyQuest>();
+        public DbSet<PlayerRolledGuildQuest> PlayerRolledGuildQuests => Set<PlayerRolledGuildQuest>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -53,6 +54,10 @@ namespace DAL.Data
                 .WithMany()
                 .HasForeignKey(pgq => pgq.GuildQuestId);
 
+            modelBuilder.Entity<PlayerGuildQuest>()
+                .HasIndex(pgq => new { pgq.PlayerId, pgq.DaytimeInfoUtc, pgq.GuildQuestId })
+                .IsUnique();
+
             // PlayerDailyQuest relationships
             modelBuilder.Entity<PlayerDailyQuest>()
                 .HasOne(pdq => pdq.Player)
@@ -68,6 +73,21 @@ namespace DAL.Data
                 .HasOne(o => o.DailyQuest)
                 .WithMany(q => q.Options)
                 .HasForeignKey(o => o.DailyQuestId);
+
+            //PlayerRolledGuildQuest relationships
+            modelBuilder.Entity<PlayerRolledGuildQuest>()
+                .HasOne(pgbq => pgbq.Player)
+                .WithMany()
+                .HasForeignKey(pgbq => pgbq.PlayerId);
+
+            modelBuilder.Entity<PlayerRolledGuildQuest>()
+                .HasOne(pgbq => pgbq.GuildQuest)
+                .WithMany()
+                .HasForeignKey(pgbq => pgbq.GuildQuestId);
+
+            modelBuilder.Entity<PlayerRolledGuildQuest>()
+                .HasIndex(pgbq => new { pgbq.PlayerId, pgbq.DaytimeInfoUtc, pgbq.GuildQuestId })
+                .IsUnique();
         }
     }
 }

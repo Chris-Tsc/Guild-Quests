@@ -1,25 +1,25 @@
-﻿using BLL.Contracts.DailyQuests;
-using BLL.Services.Interfaces;
+﻿using BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using BLL.Contracts.GuildQuests;
 
 namespace GuildQuestsAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DailyQuestController : ControllerBase
+    public class GuildQuestController : ControllerBase
     {
-        private readonly IDailyQuestService _daily;
+        private readonly IGuildQuestService _guildQuests;
 
-        public DailyQuestController(IDailyQuestService daily)
+        public GuildQuestController(IGuildQuestService guildQuests)
         {
-            _daily = daily;
+            _guildQuests = guildQuests;
         }
 
         [Authorize]
-        [HttpGet("today")]
-        public async Task<IActionResult> Today()
+        [HttpGet("board")]
+        public async Task<IActionResult> Board()
         {
             try
             {
@@ -27,9 +27,9 @@ namespace GuildQuestsAPI.Controllers
                 if (string.IsNullOrWhiteSpace(appUserId))
                     return Unauthorized(new { error = "Missing user id in token." });
 
-                var quests = await _daily.GetOrCreateTodayDailyQuestsAsync(appUserId);
+                var board = await _guildQuests.GetTodayGuildBoardAsync(appUserId);
 
-                return Ok(quests);
+                return Ok(board);
             }
             catch (Exception ex)
             {
@@ -37,10 +37,9 @@ namespace GuildQuestsAPI.Controllers
             }
         }
 
-
         [Authorize]
-        [HttpPost("complete")]
-        public async Task<IActionResult> Complete(CompleteDailyQuestRequest request)
+        [HttpPost("accept")]
+        public async Task<IActionResult> Accept(AcceptGuildQuestRequest request)
         {
             try
             {
@@ -48,16 +47,13 @@ namespace GuildQuestsAPI.Controllers
                 if (string.IsNullOrWhiteSpace(appUserId))
                     return Unauthorized(new { error = "Missing user id in token." });
 
-                var result = await _daily.CompleteDailyQuestAsync(
-                    appUserId,
-                    request.DailyQuestId,
-                    request.DailyQuestOptionId);
+                var result = await _guildQuests.AcceptGuildQuestAsync(appUserId, request.GuildQuestId);
 
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                if (ex.Message.Contains("Already completed", StringComparison.OrdinalIgnoreCase))
+                if (ex.Message.Contains("already accepted", StringComparison.OrdinalIgnoreCase))
                     return Conflict(new { error = ex.Message });
 
                 return BadRequest(new { error = ex.Message });
