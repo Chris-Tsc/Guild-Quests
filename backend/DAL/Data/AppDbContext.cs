@@ -18,6 +18,7 @@ namespace DAL.Data
         public DbSet<Events> Events => Set<Events>();
         public DbSet<SkillNode> SkillNodes => Set<SkillNode>();
         public DbSet<DailyQuestOption> DailyQuestOptions => Set<DailyQuestOption>();
+        public DbSet<GuildQuestOption> GuildQuestOptions => Set<GuildQuestOption>();
         public DbSet<PlayerGuildQuest> PlayerGuildQuests => Set<PlayerGuildQuest>();
         public DbSet<PlayerDailyQuest> PlayerDailyQuests => Set<PlayerDailyQuest>();
         public DbSet<PlayerRolledGuildQuest> PlayerRolledGuildQuests => Set<PlayerRolledGuildQuest>();
@@ -88,6 +89,11 @@ namespace DAL.Data
             modelBuilder.Entity<PlayerRolledGuildQuest>()
                 .HasIndex(pgbq => new { pgbq.PlayerId, pgbq.DaytimeInfoUtc, pgbq.GuildQuestId })
                 .IsUnique();
+
+            modelBuilder.Entity<GuildQuestOption>()
+                .HasOne(o => o.GuildQuest)
+                .WithMany(q => q.Options)
+                .HasForeignKey(o => o.GuildQuestId);
         }
     }
 }

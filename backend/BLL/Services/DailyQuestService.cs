@@ -155,13 +155,19 @@ namespace BLL.Services
             int fullXp = completeCheck.DailyQuest.BaseXP;
             int gainedXp = success ? fullXp : (int)Math.Floor(fullXp * 0.25);
 
-            player.CurrentXP += gainedXp;
+            _playerService.AddXpAndHandleLevelUps(player, gainedXp);
 
 
             completeCheck.IsCompleted = true;
 
             await _dbc.SaveChangesAsync();
-            return new CompleteDailyQuestResultDto(success, gainedXp, player.CurrentXP);
+            return new CompleteDailyQuestResultDto(
+                success,
+                gainedXp,
+                player.CurrentXP,
+                player.Level,
+                _playerService.GetXpRequiredForNextLevel(player.Level)
+            );
         }
     }
 }

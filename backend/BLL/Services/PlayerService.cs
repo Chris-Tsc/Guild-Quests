@@ -59,5 +59,31 @@ namespace BLL.Services
         {
             return await _dbc.Players.FirstOrDefaultAsync(p => p.AppUserId == appUserId);
         }
+
+        public void AddXpAndHandleLevelUps(Player player, int gainedXp)
+        {
+            if (gainedXp <= 0)
+                return;
+
+            player.CurrentXP += gainedXp;
+
+            while (player.CurrentXP >= GetXpRequiredForNextLevel(player.Level))
+            {
+                var requiredXp = GetXpRequiredForNextLevel(player.Level);
+
+                player.CurrentXP -= requiredXp;
+                player.Level++;
+            }
+        }
+
+        public int GetXpRequiredForNextLevel(int level)
+        {
+            return level switch
+            {
+                1 => 400,
+                2 => 700,
+                _ => 700 + ((level - 2) * 350)
+            };
+        }
     }
 }

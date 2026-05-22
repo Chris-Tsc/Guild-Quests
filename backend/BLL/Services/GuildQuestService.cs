@@ -77,6 +77,108 @@ namespace BLL.Services
             );
         }
 
+        public async Task<List<ActiveGuildQuestDto>> GetActiveGuildQuestsAsync(string appUserId)
+        {
+            var player = await _playerService.GetMyPlayerAsync(appUserId);
+            if (player == null)
+                throw new Exception("Player not created yet.");
+
+            var todayTimeUtc = DateTime.UtcNow.Date;
+
+            var accepted = await _dbc.PlayerGuildQuests
+                .Where(x =>
+                    x.PlayerId == player.Id &&
+                    x.DaytimeInfoUtc == todayTimeUtc &&
+                    !x.IsCompleted)
+                .Include(x => x.GuildQuest)
+                    .ThenInclude(q => q!.Events)
+                .Include(x => x.GuildQuest)
+                    .ThenInclude(q => q!.Options)
+                .ToListAsync();
+
+            return accepted
+                .Where(x => x.GuildQuest != null)
+                .Select(x => new ActiveGuildQuestDto(
+                    x.GuildQuest!.Id,
+                    x.GuildQuest.Name,
+                    x.GuildQuest.Description,
+                    x.GuildQuest.GuildQuestType?.ToString(),
+                    x.GuildQuest.RequiredLevel,
+                    x.GuildQuest.EnergyCost,
+                    x.GuildQuest.EventsId,
+                    x.GuildQuest.Events?.BaseXP ?? 0,
+                    x.IsCompleted,
+                    x.GuildQuest.Options
+                        .Select(o => new GuildQuestOptionDto(o.Id, o.Text))
+                        .ToList()
+                ))
+                .ToList();
+        }
+
+        public async Task<CompleteGuildQuestResultDto> CompleteGuildQuestAsync(
+            string appUserId,
+            int guildQuestId,
+            int guildQuestOptionId)
+        {
+            var player = await _playerService.GetMyPlayerAsync(appUserId);
+            if (player == null)
+                throw new Exception("Player not created yet.");
+
+            var todayTimeUtc = DateTime.UtcNow.Date;
+
+            var acceptedQuest = await _dbc.PlayerGuildQuests
+                .Include(x => x.GuildQuest)
+                    .ThenInclude(q => q!.Events)
+                .FirstOrDefaultAsync(x =>
+                    x.PlayerId == player.Id &&
+                    x.GuildQuestId == guildQuestId &&
+                    x.DaytimeInfoUtc == todayTimeUtc);
+
+            if (acceptedQuest == null)
+                throw new Exception("This guild quest is not accepted today.");
+
+            if (acceptedQuest.IsCompleted)
+                throw new Exception("This guild quest is already completed today.");
+
+            if (acceptedQuest.GuildQuest == null)
+                throw new Exception("Guild quest data missing.");
+
+            var option = await _dbc.GuildQuestOptions
+                .FirstOrDefaultAsync(o => o.Id == guildQuestOptionId && o.GuildQuestId == guildQuestId);
+
+            if (option == null)
+                throw new Exception("Invalid option for this guild quest.");
+
+            int chance =
+                option.BaseSuccessChance +
+                (player.Strength * option.StrengthWeight) +
+                (player.Intelligence * option.IntelligenceWeight) +
+                (player.Agility * option.AgilityWeight) +
+                (player.Perception * option.PerceptionWeight) +
+                player.Luck;
+
+            chance = Math.Clamp(chance, 5, 95);
+
+            int roll = Random.Shared.Next(0, 100);
+            bool success = roll < chance;
+
+            int fullXp = acceptedQuest.GuildQuest.Events?.BaseXP ?? 0;
+            int gainedXp = success ? fullXp : (int)Math.Floor(fullXp * 0.25);
+
+            _playerService.AddXpAndHandleLevelUps(player, gainedXp);
+            acceptedQuest.IsCompleted = true;
+
+            await _dbc.SaveChangesAsync();
+
+            return new CompleteGuildQuestResultDto(
+                success,
+                gainedXp,
+                player.CurrentXP,
+                player.Level,
+                _playerService.GetXpRequiredForNextLevel(player.Level)
+            );
+        }
+
         public async Task<List<GuildQuestBoardTestDto>> GetTodayGuildBoardAsync(string appUserId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);

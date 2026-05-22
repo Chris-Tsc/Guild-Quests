@@ -16,5 +16,7 @@ namespace DAL.Models
 
         public int RequiredLevel { get; set; } = 1;  // Hidden until player reaches this level
         public int EnergyCost { get; set; } = 1;     // Energy needed to accept
+
+        public List<GuildQuestOption> Options { get; set; } = new();
     }
 }

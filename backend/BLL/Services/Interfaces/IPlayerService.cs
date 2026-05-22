@@ -6,5 +6,7 @@ namespace BLL.Services.Interfaces
     {
         Task<Player> CreatePlayerAsync(string appUserId, string inGameName);
         Task<Player?> GetMyPlayerAsync(string appUserId);
+        void AddXpAndHandleLevelUps(Player player, int gainedXp);
+        int GetXpRequiredForNextLevel(int level);
     }
 }
