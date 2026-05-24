@@ -13,6 +13,8 @@ namespace BLL.Contracts.GuildQuests
         int RequiredLevel,
         int EnergyCost,
         int EventsId,
-        int BaseXP
+        int BaseXP,
+        bool IsAcceptedToday,
+        bool IsCompletedToday
     );
 }

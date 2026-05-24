@@ -187,6 +187,10 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
+            var acceptedToday = await _dbc.PlayerGuildQuests
+                .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
+                .ToListAsync();
+
             var board = await _dbc.PlayerRolledGuildQuests
                 .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
                 .Include(x => x.GuildQuest)
@@ -194,7 +198,7 @@ namespace BLL.Services
                 .ToListAsync();
 
             if (board.Count >= 10)
-                return MapBoard(board);
+                return MapBoard(board, acceptedToday);
 
             if (board.Count > 0)
                 _dbc.PlayerRolledGuildQuests.RemoveRange(board);
@@ -228,24 +232,36 @@ namespace BLL.Services
 
 
 
-            return MapBoard(board);
+            return MapBoard(board, acceptedToday);
         }
 
-        private static List<GuildQuestBoardTestDto> MapBoard(List<PlayerRolledGuildQuest> board)
+        private static List<GuildQuestBoardTestDto> MapBoard(List<PlayerRolledGuildQuest> board, List<PlayerGuildQuest> acceptedToday)
         {
+            var acceptedByQuestId = acceptedToday
+                .ToDictionary(x => x.GuildQuestId, x => x.IsCompleted);
+
+
             return board
-                .Where(x => x.GuildQuest != null)
-                .Select(x => new GuildQuestBoardTestDto(
-                    x.GuildQuest!.Id,
-                    x.GuildQuest.Name,
-                    x.GuildQuest.Description,
-                    x.GuildQuest.GuildQuestType?.ToString(),
-                    x.GuildQuest.RequiredLevel,
-                    x.GuildQuest.EnergyCost,
-                    x.GuildQuest.EventsId,
-                    x.GuildQuest.Events?.BaseXP ?? 0
-                ))
-                .ToList();
+            .Where(x => x.GuildQuest != null)
+            .Select(x =>
+            {
+            var isAcceptedToday = acceptedByQuestId.ContainsKey(x.GuildQuestId);
+            var isCompletedToday = acceptedByQuestId.TryGetValue(x.GuildQuestId, out var completed) && completed;
+
+            return new GuildQuestBoardTestDto(
+                x.GuildQuest!.Id,
+                x.GuildQuest.Name,
+                x.GuildQuest.Description,
+                x.GuildQuest.GuildQuestType?.ToString(),
+                x.GuildQuest.RequiredLevel,
+                x.GuildQuest.EnergyCost,
+                x.GuildQuest.EventsId,
+                x.GuildQuest.Events?.BaseXP ?? 0,
+                isAcceptedToday,
+                isCompletedToday
+                );
+            })
+            .ToList();
         }
     }
 }

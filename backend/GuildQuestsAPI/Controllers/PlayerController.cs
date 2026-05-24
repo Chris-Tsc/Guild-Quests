@@ -29,6 +29,7 @@ namespace GuildQuestsAPI.Controllers
                     return Unauthorized(new { error = "Missing user id in token." });
 
                 var player = await _players.CreatePlayerAsync(appUserId, request.InGameName);
+                
 
                 return Ok(new
                 {
@@ -36,6 +37,7 @@ namespace GuildQuestsAPI.Controllers
                     player.InGameName,
                     player.Level,
                     player.CurrentXP,
+                    XpRequiredForNextLevel = _players.GetXpRequiredForNextLevel(player.Level),
                     player.Energy,
                     player.Strength,
                     player.Intelligence,
@@ -72,6 +74,7 @@ namespace GuildQuestsAPI.Controllers
                 player.InGameName,
                 player.Level,
                 player.CurrentXP,
+                XpRequiredForNextLevel = _players.GetXpRequiredForNextLevel(player.Level),
                 player.Energy,
                 player.Strength,
                 player.Intelligence,
