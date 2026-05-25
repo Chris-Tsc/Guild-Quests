@@ -38,6 +38,7 @@ namespace BLL.Services
 
                 Level = 1,
                 CurrentXP = 0,
+                UnspentStatPoints = 0,
 
                 Energy = 100,
                 LastEnergyResetDate = DateTime.UtcNow.Date,
@@ -65,25 +66,87 @@ namespace BLL.Services
             if (gainedXp <= 0)
                 return;
 
+            if (player.Level >= IPlayerService.MaxLevel)
+            {
+                player.CurrentXP = 0;
+                return;
+            }
+
             player.CurrentXP += gainedXp;
 
-            while (player.CurrentXP >= GetXpRequiredForNextLevel(player.Level))
+            while (
+                player.Level < IPlayerService.MaxLevel &&
+                player.CurrentXP >= GetXpRequiredForNextLevel(player.Level))
             {
                 var requiredXp = GetXpRequiredForNextLevel(player.Level);
 
                 player.CurrentXP -= requiredXp;
                 player.Level++;
+                player.UnspentStatPoints += IPlayerService.StatPointsPerLevel;
             }
+
+            if (player.Level >= IPlayerService.MaxLevel)
+                player.CurrentXP = 0;
         }
 
         public int GetXpRequiredForNextLevel(int level)
         {
+            if (level >= IPlayerService.MaxLevel)
+                return 0;
+
             return level switch
             {
                 1 => 400,
                 2 => 700,
                 _ => 700 + ((level - 2) * 350)
             };
+        }
+
+        public async Task<Player> SpendStatPointsAsync(string appUserId, string stat, int points)
+        {
+            if (points <= 0)
+                throw new Exception("You dont have any skill points!.");
+
+            var player = await GetMyPlayerAsync(appUserId);
+            if (player == null)
+                throw new Exception("Player not created yet.");
+
+            if (player.UnspentStatPoints < points)
+                throw new Exception("Something is wrong with your skill points!");
+
+            var normalizedStat = stat.Trim().ToLowerInvariant();
+
+            switch (normalizedStat)
+            {
+                case "strength":
+                    player.Strength += points;
+                    break;
+
+                case "intelligence":
+                    player.Intelligence += points;
+                    break;
+
+                case "agility":
+                    player.Agility += points;
+                    break;
+
+                case "perception":
+                    player.Perception += points;
+                    break;
+
+                case "luck":
+                    player.Luck += points;
+                    break;
+
+                default:
+                    throw new Exception("Invalid stat.");
+            }
+
+            player.UnspentStatPoints -= points;
+
+            await _dbc.SaveChangesAsync();
+
+            return player;
         }
     }
 }

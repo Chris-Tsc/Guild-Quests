@@ -1,4 +1,5 @@
 ﻿using BLL.Services.Interfaces;
+using BLL.Contracts.Players;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -37,6 +38,7 @@ namespace GuildQuestsAPI.Controllers
                     player.InGameName,
                     player.Level,
                     player.CurrentXP,
+                    player.UnspentStatPoints,
                     XpRequiredForNextLevel = _players.GetXpRequiredForNextLevel(player.Level),
                     player.Energy,
                     player.Strength,
@@ -74,6 +76,7 @@ namespace GuildQuestsAPI.Controllers
                 player.InGameName,
                 player.Level,
                 player.CurrentXP,
+                player.UnspentStatPoints,
                 XpRequiredForNextLevel = _players.GetXpRequiredForNextLevel(player.Level),
                 player.Energy,
                 player.Strength,
@@ -82,6 +85,42 @@ namespace GuildQuestsAPI.Controllers
                 player.Perception,
                 player.Luck
             });
+        }
+
+        [Authorize]
+        [HttpPost("spend-stat-points")]
+        public async Task<IActionResult> SpendStatPoints(SpendStatPointRequest request)
+        {
+            try
+            {
+                var appUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrWhiteSpace(appUserId))
+                    return Unauthorized(new { error = "Missing user id in token." });
+
+                var player = await _players.SpendStatPointsAsync(
+                    appUserId,
+                    request.Stat,
+                    request.Points);
+
+                return Ok(new PlayerStatsDto(
+                    player.Id,
+                    player.InGameName,
+                    player.Level,
+                    player.CurrentXP,
+                    player.UnspentStatPoints,
+                    _players.GetXpRequiredForNextLevel(player.Level),
+                    player.Energy,
+                    player.Strength,
+                    player.Intelligence,
+                    player.Agility,
+                    player.Perception,
+                    player.Luck
+                ));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }

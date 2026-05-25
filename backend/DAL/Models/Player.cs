@@ -8,6 +8,7 @@ namespace DAL.Models
         public string? InGameName { get; set; }
         public int Level { get; set; }
         public int CurrentXP { get; set; }
+        public int UnspentStatPoints { get; set; }
         public int Energy { get; set; }
         public DateTime LastEnergyResetDate { get; set; }
 
