@@ -70,6 +70,8 @@ namespace GuildQuestsAPI.Controllers
             if (player == null)
                 return NotFound(new { error = "Player not created yet." });
 
+            await _players.ResetEnergyIfNeededAsync(player);
+
             return Ok(new
             {
                 player.Id,

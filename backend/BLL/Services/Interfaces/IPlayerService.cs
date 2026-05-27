@@ -12,5 +12,6 @@ namespace BLL.Services.Interfaces
         Task<Player> SpendStatPointsAsync(string appUserId, string stat, int points);
         void AddXpAndHandleLevelUps(Player player, int gainedXp);
         int GetXpRequiredForNextLevel(int level);
+        Task ResetEnergyIfNeededAsync(Player player);
     }
 }

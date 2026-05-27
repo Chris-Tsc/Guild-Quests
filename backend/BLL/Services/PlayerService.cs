@@ -148,5 +148,18 @@ namespace BLL.Services
 
             return player;
         }
+
+        public async Task ResetEnergyIfNeededAsync(Player player)
+        {
+            var todayTimeUtc = DateTime.UtcNow.Date;
+
+            if (player.LastEnergyResetDate.Date >= todayTimeUtc)
+                return;
+
+            player.Energy = 100;
+            player.LastEnergyResetDate = todayTimeUtc;
+
+            await _dbc.SaveChangesAsync();
+        }
     }
 }

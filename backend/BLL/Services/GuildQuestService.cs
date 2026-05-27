@@ -25,11 +25,7 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
-            if (player.LastEnergyResetDate.Date < todayTimeUtc)
-            {
-                player.Energy = 100;
-                player.LastEnergyResetDate = todayTimeUtc;
-            }
+            await _playerService.ResetEnergyIfNeededAsync(player);
 
             var boardQuest = await _dbc.PlayerRolledGuildQuests
                 .Include(x => x.GuildQuest)
@@ -85,6 +81,8 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
+            await _playerService.ResetEnergyIfNeededAsync(player);
+
             var accepted = await _dbc.PlayerGuildQuests
                 .Where(x =>
                     x.PlayerId == player.Id &&
@@ -126,6 +124,8 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
+            await _playerService.ResetEnergyIfNeededAsync(player);
+
             var acceptedQuest = await _dbc.PlayerGuildQuests
                 .Include(x => x.GuildQuest)
                     .ThenInclude(q => q!.Events)
@@ -149,15 +149,8 @@ namespace BLL.Services
             if (option == null)
                 throw new Exception("Invalid option for this guild quest.");
 
-            int chance =
-                option.BaseSuccessChance +
-                (player.Strength * option.StrengthWeight) +
-                (player.Intelligence * option.IntelligenceWeight) +
-                (player.Agility * option.AgilityWeight) +
-                (player.Perception * option.PerceptionWeight) +
-                player.Luck;
-
-            chance = Math.Clamp(chance, 5, 95);
+            // success chance calculating formula
+            int chance = CalculateSuccessChance(player, option, acceptedQuest.GuildQuest);
 
             int roll = Random.Shared.Next(0, 100);
             bool success = roll < chance;
@@ -262,6 +255,30 @@ namespace BLL.Services
                 );
             })
             .ToList();
+        }
+
+        private static int CalculateSuccessChance(Player player, GuildQuestOption option, GuildQuest quest)
+        {
+            var weightedStatScore =
+                (player.Strength * option.StrengthWeight) +
+                (player.Intelligence * option.IntelligenceWeight) +
+                (player.Agility * option.AgilityWeight) +
+                (player.Perception * option.PerceptionWeight);
+
+            var statContribution = weightedStatScore * 0.55;
+            var luckContribution = player.Luck * 0.25;
+            var playerLevelBonus = player.Level * 0.75;
+            var questLevelPenalty = quest.RequiredLevel * 0.6;
+
+            var rawChance =
+                option.BaseSuccessChance +
+                statContribution +
+                luckContribution +
+                playerLevelBonus -
+                questLevelPenalty;
+
+            //makes sure success-failure is never guaranteed
+            return Math.Clamp((int)Math.Round(rawChance), 5, 95);
         }
     }
 }

@@ -6,8 +6,6 @@ namespace BLL.Services.Interfaces
     {
         Task<List<DailyQuestTodayDto>> GetOrCreateTodayDailyQuestsAsync(string appUserId);
 
-        //Task<List<PlayerDailyQuest>> GetOrCreateTodayDailyQuestAssignmentsAsync(string appUserId);
-
         Task<CompleteDailyQuestResultDto> CompleteDailyQuestAsync(string appUserId, int dailyQuestId, int dailyQuestOptionId);
     }
 }

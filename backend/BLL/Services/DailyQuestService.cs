@@ -137,17 +137,9 @@ namespace BLL.Services
             if (option == null)
                 throw new Exception("Invalid option for this daily quest.");
 
-            // sample simple formula for now
-            int chance =
-                option.BaseSuccessChance +
-                (player.Strength * option.StrengthWeight) +
-                (player.Intelligence * option.IntelligenceWeight) +
-                (player.Agility * option.AgilityWeight) +
-                (player.Perception * option.PerceptionWeight) +
-                player.Luck;
+            // success chance calculating formula
+            int chance = CalculateSuccessChance(player, option, completeCheck.DailyQuest);
 
-            // made chance so nothing is guaranteed for now
-            chance = Math.Clamp(chance, 5, 95);
 
             int roll = Random.Shared.Next(0, 100);
             bool success = roll < chance;
@@ -168,6 +160,30 @@ namespace BLL.Services
                 player.Level,
                 _playerService.GetXpRequiredForNextLevel(player.Level)
             );
+        }
+
+        private static int CalculateSuccessChance(Player player, DailyQuestOption option, DailyQuest quest)
+        {
+            var weightedStatScore =
+                (player.Strength * option.StrengthWeight) +
+                (player.Intelligence * option.IntelligenceWeight) +
+                (player.Agility * option.AgilityWeight) +
+                (player.Perception * option.PerceptionWeight);
+
+            var statContribution = weightedStatScore * 0.55;
+            var luckContribution = player.Luck * 0.25;
+            var playerLevelBonus = player.Level * 0.75;
+            var questLevelPenalty = quest.RequiredLevel * 0.6;
+
+            var rawChance =
+                option.BaseSuccessChance +
+                statContribution +
+                luckContribution +
+                playerLevelBonus -
+                questLevelPenalty;
+
+            //makes sure success-failure is never guaranteed
+            return Math.Clamp((int)Math.Round(rawChance), 5, 95);
         }
     }
 }
