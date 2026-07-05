@@ -6,6 +6,8 @@ namespace BLL.Contracts.DailyQuests
         int GainedXP,
         int NewCurrentXP,
         int NewLevel,
-        int XpRequiredForNextLevel
+        int XpRequiredForNextLevel,
+        bool LeveledUp,
+        int StatPointsGained
     );
 }

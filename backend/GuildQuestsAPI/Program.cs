@@ -1,6 +1,8 @@
 using BLL.Services;
 using BLL.Services.Interfaces;
 using DAL.Data;
+using DAL.Repositories;
+using DAL.Repositories.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -19,6 +21,12 @@ if (string.IsNullOrEmpty(connectionString))
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IAppUserRepository, AppUserRepository>();
+builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
+builder.Services.AddScoped<IDailyQuestRepository, DailyQuestRepository>();
+builder.Services.AddScoped<IGuildQuestRepository, GuildQuestRepository>();
 
 //JWT
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET_G");
@@ -44,6 +52,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+//Adds CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendDev", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddSingleton(new JwtTokenService(jwtSecret));
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
@@ -99,6 +119,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("FrontendDev");
 
 app.UseAuthentication();
 

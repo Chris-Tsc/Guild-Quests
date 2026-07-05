@@ -9,7 +9,6 @@ namespace DAL.Models
         public EventEnum? EventCategory { get; set; }
         public int BaseDifficulty { get; set; }   // Base difficulty of this event
         public double ScalingFactor { get; set; } // How difficulty scales with player level
-        public int BaseXP { get; set; } 
     }
 }
 

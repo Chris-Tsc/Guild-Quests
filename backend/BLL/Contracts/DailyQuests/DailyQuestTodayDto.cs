@@ -9,6 +9,7 @@ namespace BLL.Contracts.DailyQuests
         int RequiredLevel,
         int EventsId,
         bool IsCompleted,
-        List<DailyQuestOptionDto> Options
+        List<DailyQuestOptionDto> Options,
+        string? EventCategory
     );
 }

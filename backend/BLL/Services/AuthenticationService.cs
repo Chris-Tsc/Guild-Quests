@@ -1,19 +1,20 @@
 ﻿using BLL.Services.Interfaces;
-using DAL.Data;
 using DAL.Identity;
-using Microsoft.EntityFrameworkCore;
+using DAL.Repositories.Interfaces;
 
 
 namespace BLL.Services
 {
     public class AuthenticationService : IAuthenticationService
     {
-        private readonly AppDbContext _dbc;
+        private readonly IAppUserRepository _users;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly JwtTokenService _jwt;
 
-        public AuthenticationService(AppDbContext dbc, JwtTokenService jwt)
+        public AuthenticationService(IAppUserRepository users, IUnitOfWork unitOfWork, JwtTokenService jwt)
         {
-            _dbc = dbc;
+            _users = users;
+            _unitOfWork = unitOfWork;
             _jwt = jwt;
         }
 
@@ -28,7 +29,7 @@ namespace BLL.Services
             if (string.IsNullOrWhiteSpace(password))
                 throw new Exception("Password is required.");
 
-            bool exists = await _dbc.AppUsers.AnyAsync(u => u.Username == username);
+            bool exists = await _users.UsernameExistsAsync(username);
             if (exists) throw new Exception("Username already exists.");
 
             var (hash, salt) = PasswordHasher.HashPassword(password);
@@ -40,8 +41,8 @@ namespace BLL.Services
                 PasswordSalt = salt
             };
 
-            _dbc.AppUsers.Add(user);
-            await _dbc.SaveChangesAsync();
+            _users.Add(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return _jwt.CreateToken(user);
         }
@@ -54,7 +55,7 @@ namespace BLL.Services
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                 throw new Exception("Invalid credentials.");
 
-            var user = await _dbc.AppUsers.FirstOrDefaultAsync(u => u.Username == username);
+            var user = await _users.GetByUsernameAsync(username);
             if (user == null) throw new Exception("Invalid credentials.");
 
             var storedHash = user.PasswordHash ?? string.Empty;

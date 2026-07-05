@@ -15,6 +15,7 @@ namespace BLL.Contracts.GuildQuests
         int EventsId,
         int BaseXP,
         bool IsAcceptedToday,
-        bool IsCompletedToday
+        bool IsCompletedToday,
+        string? EventCategory
     );
 }

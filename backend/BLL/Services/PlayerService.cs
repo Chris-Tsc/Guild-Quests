@@ -1,17 +1,18 @@
 ﻿using BLL.Services.Interfaces;
-using DAL.Data;
 using DAL.Models;
-using Microsoft.EntityFrameworkCore;
+using DAL.Repositories.Interfaces;
 
 namespace BLL.Services
 {
     public class PlayerService : IPlayerService
     {
-        private readonly AppDbContext _dbc;
+        private readonly IPlayerRepository _players;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public PlayerService(AppDbContext dbc)
+        public PlayerService(IPlayerRepository players, IUnitOfWork unitOfWork)
         {
-            _dbc = dbc;
+            _players = players;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<Player> CreatePlayerAsync(string appUserId, string inGameName)
@@ -22,12 +23,12 @@ namespace BLL.Services
                 throw new Exception("InGameName is required.");
 
             // One player per user
-            bool alreadyHasPlayer = await _dbc.Players.AnyAsync(p => p.AppUserId == appUserId);
+            bool alreadyHasPlayer = await _players.CreatedForUserAsync(appUserId);
             if (alreadyHasPlayer)
                 throw new Exception("Player already exists for this user.");
 
             // InGameName must be unique
-            bool nameTaken = await _dbc.Players.AnyAsync(p => p.InGameName == inGameName);
+            bool nameTaken = await _players.InGameNameExistsAsync(inGameName);
             if (nameTaken)
                 throw new Exception("InGameName already exists.");
 
@@ -50,17 +51,18 @@ namespace BLL.Services
                 Luck = 5
             };
 
-            _dbc.Players.Add(player);
-            await _dbc.SaveChangesAsync();
+            _players.Add(player);
+            await _unitOfWork.SaveChangesAsync();
 
             return player;
         }
 
         public async Task<Player?> GetMyPlayerAsync(string appUserId)
         {
-            return await _dbc.Players.FirstOrDefaultAsync(p => p.AppUserId == appUserId);
+            return await _players.GetByAppUserIdAsync(appUserId);
         }
 
+        //Handles experience carryover and level-up logic
         public void AddXpAndHandleLevelUps(Player player, int gainedXp)
         {
             if (gainedXp <= 0)
@@ -89,6 +91,7 @@ namespace BLL.Services
                 player.CurrentXP = 0;
         }
 
+        //Calculates the experience required for the next level up
         public int GetXpRequiredForNextLevel(int level)
         {
             if (level >= IPlayerService.MaxLevel)
@@ -102,6 +105,7 @@ namespace BLL.Services
             };
         }
 
+        //Handles the stat point spending logic
         public async Task<Player> SpendStatPointsAsync(string appUserId, string stat, int points)
         {
             if (points <= 0)
@@ -144,11 +148,12 @@ namespace BLL.Services
 
             player.UnspentStatPoints -= points;
 
-            await _dbc.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return player;
         }
 
+        //Resets the player energy points daily if he spent any on the previous day
         public async Task ResetEnergyIfNeededAsync(Player player)
         {
             var todayTimeUtc = DateTime.UtcNow.Date;
@@ -159,7 +164,7 @@ namespace BLL.Services
             player.Energy = 100;
             player.LastEnergyResetDate = todayTimeUtc;
 
-            await _dbc.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
         }
     }
 }

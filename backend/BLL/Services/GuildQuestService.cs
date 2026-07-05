@@ -1,22 +1,24 @@
 ﻿using BLL.Services.Interfaces;
-using DAL.Data;
+using DAL.Repositories.Interfaces;
 using BLL.Contracts.GuildQuests;
 using DAL.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace BLL.Services
 {
     public class GuildQuestService : IGuildQuestService
     {
-        private readonly AppDbContext _dbc;
+        private readonly IGuildQuestRepository _guildQuests;
         private readonly IPlayerService _playerService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public GuildQuestService(AppDbContext dbc, IPlayerService playerService)
+        public GuildQuestService(IGuildQuestRepository guildQuests, IPlayerService playerService, IUnitOfWork unitOfWork)
         {
-            _dbc = dbc;
+            _guildQuests = guildQuests;
             _playerService = playerService;
+            _unitOfWork = unitOfWork;
         }
 
+        //Handles the logic for when a player accepts a guild quest from the guild board
         public async Task<AcceptGuildQuestResultDto> AcceptGuildQuestAsync(string appUserId, int guildQuestId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
@@ -27,21 +29,15 @@ namespace BLL.Services
 
             await _playerService.ResetEnergyIfNeededAsync(player);
 
-            var boardQuest = await _dbc.PlayerRolledGuildQuests
-                .Include(x => x.GuildQuest)
-                .FirstOrDefaultAsync(x =>
-                    x.PlayerId == player.Id &&
-                    x.GuildQuestId == guildQuestId &&
-                    x.DaytimeInfoUtc == todayTimeUtc);
+            var boardQuest = await _guildQuests.GetQuestFromBoardAsync(player.Id, guildQuestId, todayTimeUtc);
 
             if (boardQuest == null || boardQuest.GuildQuest == null)
                 throw new Exception("This guild quest is not available on your board today.");
 
-            var alreadyAccepted = await _dbc.PlayerGuildQuests
-                .AnyAsync(x =>
-                    x.PlayerId == player.Id &&
-                    x.GuildQuestId == guildQuestId &&
-                    x.DaytimeInfoUtc == todayTimeUtc);
+            var alreadyAccepted = await _guildQuests.HasAcceptedQuestTodayAsync(
+                player.Id,
+                guildQuestId,
+                todayTimeUtc);
 
             if (alreadyAccepted)
                 throw new Exception("This guild quest is already accepted today.");
@@ -61,8 +57,8 @@ namespace BLL.Services
                 IsCompleted = false
             };
 
-            _dbc.PlayerGuildQuests.Add(accepted);
-            await _dbc.SaveChangesAsync();
+            _guildQuests.AddAcceptedQuest(accepted);
+            await _unitOfWork.SaveChangesAsync();
 
             return new AcceptGuildQuestResultDto(
                 boardQuest.GuildQuest.Id,
@@ -73,6 +69,7 @@ namespace BLL.Services
             );
         }
 
+        //Returns accepted but incompleted guild quests that the player has for the day
         public async Task<List<ActiveGuildQuestDto>> GetActiveGuildQuestsAsync(string appUserId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
@@ -83,16 +80,7 @@ namespace BLL.Services
 
             await _playerService.ResetEnergyIfNeededAsync(player);
 
-            var accepted = await _dbc.PlayerGuildQuests
-                .Where(x =>
-                    x.PlayerId == player.Id &&
-                    x.DaytimeInfoUtc == todayTimeUtc &&
-                    !x.IsCompleted)
-                .Include(x => x.GuildQuest)
-                    .ThenInclude(q => q!.Events)
-                .Include(x => x.GuildQuest)
-                    .ThenInclude(q => q!.Options)
-                .ToListAsync();
+            var accepted = await _guildQuests.GetActiveAcceptedQuestsAsync(player.Id, todayTimeUtc);
 
             return accepted
                 .Where(x => x.GuildQuest != null)
@@ -104,15 +92,17 @@ namespace BLL.Services
                     x.GuildQuest.RequiredLevel,
                     x.GuildQuest.EnergyCost,
                     x.GuildQuest.EventsId,
-                    x.GuildQuest.Events?.BaseXP ?? 0,
+                    x.GuildQuest.BaseXP,
                     x.IsCompleted,
                     x.GuildQuest.Options
                         .Select(o => new GuildQuestOptionDto(o.Id, o.Text))
-                        .ToList()
+                        .ToList(),
+                    x.GuildQuest.Events?.EventCategory?.ToString()
                 ))
                 .ToList();
         }
 
+        //Handles the logic for completing one accepted guild quest
         public async Task<CompleteGuildQuestResultDto> CompleteGuildQuestAsync(
             string appUserId,
             int guildQuestId,
@@ -126,13 +116,10 @@ namespace BLL.Services
 
             await _playerService.ResetEnergyIfNeededAsync(player);
 
-            var acceptedQuest = await _dbc.PlayerGuildQuests
-                .Include(x => x.GuildQuest)
-                    .ThenInclude(q => q!.Events)
-                .FirstOrDefaultAsync(x =>
-                    x.PlayerId == player.Id &&
-                    x.GuildQuestId == guildQuestId &&
-                    x.DaytimeInfoUtc == todayTimeUtc);
+            var acceptedQuest = await _guildQuests.GetAcceptedQuestCheckForCompletionAsync(
+                player.Id,
+                guildQuestId,
+                todayTimeUtc);
 
             if (acceptedQuest == null)
                 throw new Exception("This guild quest is not accepted today.");
@@ -143,8 +130,7 @@ namespace BLL.Services
             if (acceptedQuest.GuildQuest == null)
                 throw new Exception("Guild quest data missing.");
 
-            var option = await _dbc.GuildQuestOptions
-                .FirstOrDefaultAsync(o => o.Id == guildQuestOptionId && o.GuildQuestId == guildQuestId);
+            var option = await _guildQuests.GetOptionForQuestAsync(guildQuestId, guildQuestOptionId);
 
             if (option == null)
                 throw new Exception("Invalid option for this guild quest.");
@@ -155,23 +141,32 @@ namespace BLL.Services
             int roll = Random.Shared.Next(0, 100);
             bool success = roll < chance;
 
-            int fullXp = acceptedQuest.GuildQuest.Events?.BaseXP ?? 0;
+            int fullXp = acceptedQuest.GuildQuest.BaseXP;
             int gainedXp = success ? fullXp : (int)Math.Floor(fullXp * 0.25);
 
+            var oldLevel = player.Level;
+
             _playerService.AddXpAndHandleLevelUps(player, gainedXp);
+
+            var leveledUp = player.Level > oldLevel;
+            var statPointsGained = leveledUp ? IPlayerService.StatPointsPerLevel : 0;
+
             acceptedQuest.IsCompleted = true;
 
-            await _dbc.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return new CompleteGuildQuestResultDto(
                 success,
                 gainedXp,
                 player.CurrentXP,
                 player.Level,
-                _playerService.GetXpRequiredForNextLevel(player.Level)
+                _playerService.GetXpRequiredForNextLevel(player.Level),
+                leveledUp,
+                statPointsGained
             );
         }
 
+        //Returns today's rolled guild quests for the player, and keeps returning the same quests until day changes
         public async Task<List<GuildQuestBoardTestDto>> GetTodayGuildBoardAsync(string appUserId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
@@ -180,25 +175,17 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
-            var acceptedToday = await _dbc.PlayerGuildQuests
-                .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
-                .ToListAsync();
+            var acceptedToday = await _guildQuests.GetAcceptedTodayAsync(player.Id, todayTimeUtc);
 
-            var board = await _dbc.PlayerRolledGuildQuests
-                .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
-                .Include(x => x.GuildQuest)
-                    .ThenInclude(q => q!.Events)
-                .ToListAsync();
+            var board = await _guildQuests.GetBoardTodayAsync(player.Id, todayTimeUtc);
 
             if (board.Count >= 10)
                 return MapBoard(board, acceptedToday);
 
             if (board.Count > 0)
-                _dbc.PlayerRolledGuildQuests.RemoveRange(board);
+                _guildQuests.RemoveLeftoverRolledBoard(board);
 
-            var eligible = await _dbc.GuildQuests
-                .Where(q => q.RequiredLevel <= player.Level)
-                .ToListAsync();
+            var eligible = await _guildQuests.GetEligibleGuildQuestsAsync(player.Level);
 
             if (eligible.Count < 10)
                 throw new Exception("Not enough guild quests available for your level.");
@@ -214,20 +201,17 @@ namespace BLL.Services
                 })
                 .ToList();
 
-            _dbc.PlayerRolledGuildQuests.AddRange(rolled);
-            await _dbc.SaveChangesAsync();
+            _guildQuests.AddRolledBoard(rolled);
+            await _unitOfWork.SaveChangesAsync();
 
-            board = await _dbc.PlayerRolledGuildQuests
-                .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
-                .Include(x => x.GuildQuest)
-                    .ThenInclude(q => q!.Events)
-                .ToListAsync();
+            board = await _guildQuests.GetBoardTodayAsync(player.Id, todayTimeUtc);
 
 
 
             return MapBoard(board, acceptedToday);
         }
 
+        //Converts db rows into dtos for the frontend so that it shows correctly which quests are accepted
         private static List<GuildQuestBoardTestDto> MapBoard(List<PlayerRolledGuildQuest> board, List<PlayerGuildQuest> acceptedToday)
         {
             var acceptedByQuestId = acceptedToday
@@ -249,14 +233,16 @@ namespace BLL.Services
                 x.GuildQuest.RequiredLevel,
                 x.GuildQuest.EnergyCost,
                 x.GuildQuest.EventsId,
-                x.GuildQuest.Events?.BaseXP ?? 0,
+                x.GuildQuest.BaseXP,
                 isAcceptedToday,
-                isCompletedToday
+                isCompletedToday,
+                x.GuildQuest.Events?.EventCategory?.ToString()
                 );
             })
             .ToList();
         }
 
+        //Calculates the chance for a quest to be completed successfully
         private static int CalculateSuccessChance(Player player, GuildQuestOption option, GuildQuest quest)
         {
             var weightedStatScore =

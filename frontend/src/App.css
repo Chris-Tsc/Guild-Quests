@@ -1,0 +1,388 @@
+.page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+}
+
+.page-panel {
+    width: min(900px, calc(100vw - 32px));
+    min-height: 420px;
+    padding: 28px;
+    border-radius: 10px;
+    background: rgba(68, 42, 23, 0.82);
+    border: 1px solid rgba(255, 232, 184, 0.35);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #ffe6a7;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.dashboard {
+    width: min(360px, calc(100vw - 32px));
+    display: grid;
+    gap: 18px;
+}
+
+.box {
+    display: grid;
+    place-items: center;
+    min-height: 82px;
+    border-radius: 8px;
+    background: rgba(84, 50, 24, 0.86);
+    border: 1px solid rgba(255, 225, 169, 0.45);
+    color: #fff1cf;
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.box:hover:not(:disabled) {
+    background: rgb(188 97 31 / 0.82);
+}
+
+.auth-stack {
+    width: min(340px, calc(100vw - 32px));
+    display: grid;
+    gap: 16px;
+    text-align: center;
+}
+
+.auth-stack h1 {
+    margin: 0 0 8px;
+    color: #fff4d6;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.75);
+}
+
+.auth-stack input {
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 238, 198, 0.75);
+    border-radius: 8px;
+    background: rgba(20, 24, 30, 0.35);
+    color: #fff8e8;
+    font: inherit;
+    outline: none;
+    backdrop-filter: blur(4px);
+}
+
+.auth-stack input::placeholder {
+    color: rgba(255, 248, 232, 0.78);
+}
+
+.auth-stack button {
+    height: 48px;
+    border: 1px solid rgba(255, 228, 166, 0.8);
+    border-radius: 8px;
+    background: rgba(85, 49, 23, 0.82);
+    color: #fff1cf;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+
+}
+
+.auth-stack button:hover {
+    background: rgb(188 97 31 / 0.82);
+}
+
+.auth-stack a {
+    color: #fff1cf;
+    font-weight: 700;
+    text-decoration: none;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.stat-card,
+.quest-card {
+    border: 1px solid rgba(255, 225, 169, 0.35);
+    border-radius: 8px;
+    background: rgba(38, 24, 15, 0.42);
+}
+
+.quest-card h2,
+.stat-card h2 {
+    margin: 0;
+}
+
+.stat-points {
+    margin: 12px auto 24px;
+    width: fit-content;
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: rgba(38, 24, 15, 0.48);
+    border: 1px solid rgba(255, 225, 169, 0.35);
+    font-weight: 800;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+}
+
+.stat-card {
+    min-height: 160px;
+    padding: 16px;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 14px;
+}
+
+.stat-card button,
+.quest-card button {
+    border: 1px solid rgba(255, 228, 166, 0.8);
+    border-radius: 8px;
+    background: rgba(85, 49, 23, 0.82);
+    color: #fff1cf;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.stat-card button {
+    width: 42px;
+    height: 34px;
+}
+
+.stat-card button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.quest-list {
+    display: grid;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.quest-card {
+    padding: 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    align-items: center;
+}
+
+.quest-card button {
+    min-width: 120px;
+    height: 42px;
+}
+
+.quest-card button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.quest-icon {
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.menu-button {
+    width: 100%;
+    border: 1px solid rgba(255, 225, 169, 0.45);
+    cursor: pointer;
+}
+
+.menu-button:disabled {
+    background: rgba(120, 120, 120, 0.35);
+    border-color: rgba(220, 220, 220, 0.28);
+    color: rgba(255, 255, 255, 0.55);
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+.menu-button:disabled:hover {
+    background: rgba(120, 120, 120, 0.35);
+}
+
+.form-error {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(95, 20, 20, 0.72);
+    color: #ffe1d6;
+    font-weight: 700;
+}
+
+.form-success {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(28, 86, 42, 0.72);
+    color: #dcffd8;
+    font-weight: 700;
+}
+
+.auth-stack button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.quest-detail {
+    margin-top: 24px;
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 225, 169, 0.35);
+    border-radius: 8px;
+    background: rgba(38, 24, 15, 0.42);
+}
+
+.quest-options {
+    display: grid;
+    gap: 12px;
+}
+
+.quest-detail button,
+.quest-options button {
+    min-height: 42px;
+    border: 1px solid rgba(255, 228, 166, 0.8);
+    border-radius: 8px;
+    background: rgba(85, 49, 23, 0.82);
+    color: #fff1cf;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.quest-detail button:hover:not(:disabled),
+.quest-options button:hover:not(:disabled) {
+    background: rgb(188 97 31 / 0.82);
+}
+
+.quest-detail button:disabled,
+.quest-options button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+    .quest-card {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.profile-summary {
+    margin-top: 30px;
+    min-height: 260px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    grid-template-rows: auto auto auto auto;
+    column-gap: 32px;
+    row-gap: 18px;
+    align-content: center;
+    padding: 28px;
+    border: 1px solid rgba(255, 225, 169, 0.35);
+    border-radius: 8px;
+    background: rgba(38, 24, 15, 0.42);
+}
+
+.profile-name {
+    margin: 0;
+    font-size: 42px;
+}
+
+.profile-summary p {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+@media (max-width: 900px) {
+    .page {
+        padding: 24px;
+        align-items: center;
+    }
+
+    .page-panel {
+        width: min(760px, calc(100vw - 32px));
+        padding: 24px;
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .profile-summary {
+        grid-template-columns: 1fr 1fr;
+        column-gap: 24px;
+    }
+
+    .profile-name {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 640px) {
+    .page {
+        padding: 16px;
+    }
+
+    .page-panel {
+        width: 100%;
+        min-height: auto;
+        padding: 18px;
+    }
+
+    .dashboard {
+        width: min(320px, calc(100vw - 32px));
+    }
+
+    .box {
+        min-height: 72px;
+        font-size: 20px;
+    }
+
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .quest-card {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-summary {
+        grid-template-columns: 1fr;
+        row-gap: 14px;
+        padding: 20px;
+    }
+
+    .profile-name {
+        font-size: 34px;
+    }
+
+    .profile-summary p {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 420px) {
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-stack {
+        width: 100%;
+    }
+
+    .profile-name {
+        font-size: 30px;
+    }
+
+    .profile-summary p {
+        font-size: 18px;
+    }
+}

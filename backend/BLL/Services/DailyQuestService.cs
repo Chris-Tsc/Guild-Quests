@@ -1,22 +1,24 @@
 ﻿using BLL.Contracts.DailyQuests;
 using BLL.Services.Interfaces;
-using DAL.Data;
+using DAL.Repositories.Interfaces;
 using DAL.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace BLL.Services
 {
     public class DailyQuestService : IDailyQuestService
     {
-        private readonly AppDbContext _dbc;
+        private readonly IDailyQuestRepository _dailyQuests;
         private readonly IPlayerService _playerService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public DailyQuestService(AppDbContext dbc, IPlayerService playerService)
+        public DailyQuestService(IDailyQuestRepository dailyQuests, IPlayerService playerService, IUnitOfWork unitOfWork)
         {
-            _dbc = dbc;
+            _dailyQuests = dailyQuests;
             _playerService = playerService;
+            _unitOfWork = unitOfWork;
         }
 
+        //Makes sure the player is assigned 2 daily quests for today, and returns the same quests for the whole day
         public async Task<List<PlayerDailyQuest>> GetOrCreateTodayDailyQuestAssignmentsAsync(string appUserId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
@@ -25,20 +27,14 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
-            var assigned = await _dbc.PlayerDailyQuests
-                .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
-                .Include(x => x.DailyQuest)
-                .ThenInclude(q => q!.Options)
-                .ToListAsync();
+            var assigned = await _dailyQuests.GetTodayPlayerDailyQuestsWithOptionsAsync(player.Id, todayTimeUtc);
 
             if (assigned.Count >= 2)
             {
                 return assigned;
             }
 
-            var eligible = await _dbc.DailyQuests
-                .Where(q => q.RequiredLevel <= player.Level)
-                .ToListAsync();
+            var eligible = await _dailyQuests.GetEligibleDailyQuestsAsync(player.Level);
 
             if (eligible.Count < 2)
                 throw new Exception("Not enough daily quests available for your level.");
@@ -54,7 +50,7 @@ namespace BLL.Services
 
             if (assigned.Count > 0)
             {
-                _dbc.PlayerDailyQuests.RemoveRange(assigned);
+                _dailyQuests.RemoveLeftoverAssignments(assigned);
             }
 
             var rows = new List<PlayerDailyQuest>
@@ -75,16 +71,13 @@ namespace BLL.Services
                 }
             };
 
-            _dbc.PlayerDailyQuests.AddRange(rows);
-            await _dbc.SaveChangesAsync();
+            _dailyQuests.AddTodayAssignments(rows);
+            await _unitOfWork.SaveChangesAsync();
 
-            return await _dbc.PlayerDailyQuests
-                .Where(x => x.PlayerId == player.Id && x.DaytimeInfoUtc == todayTimeUtc)
-                .Include(x => x.DailyQuest)
-                .ThenInclude(q => q!.Options)
-                .ToListAsync();
+            return await _dailyQuests.GetTodayPlayerDailyQuestsWithOptionsAsync(player.Id, todayTimeUtc);
         }
 
+        //Gets today's assignments and maps them to DTO for the frontend
         public async Task<List<DailyQuestTodayDto>> GetOrCreateTodayDailyQuestsAsync(string appUserId)
         {
             var assigned = await GetOrCreateTodayDailyQuestAssignmentsAsync(appUserId);
@@ -101,11 +94,13 @@ namespace BLL.Services
                     x.IsCompleted,
                     x.DailyQuest.Options
                         .Select(o => new DailyQuestOptionDto(o.Id, o.Text))
-                        .ToList()
+                        .ToList(),
+                    x.DailyQuest.Events?.EventCategory?.ToString()
                 ))
                 .ToList();
         }
 
+        //Handles the logic for completing one assigned daily quest
         public async Task<CompleteDailyQuestResultDto> CompleteDailyQuestAsync(string appUserId, int dailyQuestId, int dailyQuestOptionId)
         {
             var player = await _playerService.GetMyPlayerAsync(appUserId);
@@ -114,12 +109,10 @@ namespace BLL.Services
 
             var todayTimeUtc = DateTime.UtcNow.Date;
 
-            var completeCheck = await _dbc.PlayerDailyQuests
-                .Include(x => x.DailyQuest)
-                .FirstOrDefaultAsync(x =>
-                    x.PlayerId == player.Id &&
-                    x.DailyQuestId == dailyQuestId &&
-                    x.DaytimeInfoUtc == todayTimeUtc);
+            var completeCheck = await _dailyQuests.GetPlayerDailyQuestCheckForCompletionAsync(
+                player.Id,
+                dailyQuestId,
+                todayTimeUtc);
 
             if (completeCheck == null)
                 throw new Exception("This daily quest is not assigned to you today.");
@@ -131,8 +124,7 @@ namespace BLL.Services
                 throw new Exception("Daily quest data missing.");
 
             // make sure option belongs to this DailyQuest
-            var option = await _dbc.DailyQuestOptions
-                .FirstOrDefaultAsync(o => o.Id == dailyQuestOptionId && o.DailyQuestId == dailyQuestId);
+            var option = await _dailyQuests.GetOptionForQuestAsync(dailyQuestId, dailyQuestOptionId);
 
             if (option == null)
                 throw new Exception("Invalid option for this daily quest.");
@@ -147,21 +139,29 @@ namespace BLL.Services
             int fullXp = completeCheck.DailyQuest.BaseXP;
             int gainedXp = success ? fullXp : (int)Math.Floor(fullXp * 0.25);
 
+            var oldLevel = player.Level;
+
             _playerService.AddXpAndHandleLevelUps(player, gainedXp);
+
+            var leveledUp = player.Level > oldLevel;
+            var statPointsGained = leveledUp ? IPlayerService.StatPointsPerLevel : 0;
 
 
             completeCheck.IsCompleted = true;
 
-            await _dbc.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
             return new CompleteDailyQuestResultDto(
                 success,
                 gainedXp,
                 player.CurrentXP,
                 player.Level,
-                _playerService.GetXpRequiredForNextLevel(player.Level)
+                _playerService.GetXpRequiredForNextLevel(player.Level),
+                leveledUp,
+                statPointsGained
             );
         }
 
+        //Calculates the chance for a quest to be completed successfully
         private static int CalculateSuccessChance(Player player, DailyQuestOption option, DailyQuest quest)
         {
             var weightedStatScore =

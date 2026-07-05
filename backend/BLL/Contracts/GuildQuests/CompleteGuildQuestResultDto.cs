@@ -9,6 +9,8 @@ namespace BLL.Contracts.GuildQuests
         int GainedXP,
         int NewCurrentXP,
         int NewLevel,
-        int XpRequiredForNextLevel
+        int XpRequiredForNextLevel,
+        bool LeveledUp,
+        int StatPointsGained
     );
 }
